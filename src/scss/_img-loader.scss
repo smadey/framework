@@ -1,0 +1,53 @@
+.img-container {
+    background: #efefef url('../framework/img/img-loading.png') 50% 50% no-repeat;
+    background-size: contain;
+    height: 100%;
+    position: relative;
+    width: 100%;
+
+    &.img-avatar {
+        background-image: url('../framework/img/img-avatar-default.png');
+
+        &, .img {
+            border-radius: 50%;
+        }
+    }
+
+    &.img-adaptive {
+        &.img-loading {
+            padding-top: 100%;
+        }
+
+        img {
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            max-width: 100%;
+        }
+    }
+
+    &.img-loaded {
+        background: none;
+        padding-top: 0;
+
+        .img {
+            @include transition(opacity .3s);
+        }
+    }
+
+    &.img-error {
+        background-image: url('../framework/img/img-error.png');
+    }
+
+    .img {
+        background-color: #d6d7d8;
+        background-position: 50% 50%;
+        background-repeat: no-repeat;
+        background-size: cover;
+        height: 100%;
+        left: 0;
+        position: absolute;
+        top: 0;
+        width: 100%;
+    }
+}

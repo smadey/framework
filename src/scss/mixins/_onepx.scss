@@ -1,0 +1,79 @@
+@mixin one-px-color($color: #d6d7dc, $position: bottom) {
+    background-color: $color;
+
+    $deg: 0;
+
+    @if $position == bottom or $position == top {
+        height: 1px;
+
+        @if $position == bottom {
+            $deg: 0deg;
+        }
+        @else {
+            $deg: 180deg;
+        }
+
+    }
+    @else if $position == left or $position == right {
+        width: 1px;
+
+        @if $position == left {
+            $deg: 90deg;
+        }
+        @else {
+            $deg: -90deg;
+        }
+    }
+
+    @include hdpi(1.5) {
+        background-color: transparent;
+        background-image: linear-gradient(#{$deg}, $color 50%, transparent 50%);
+        background-size: 100% 100%;
+    }
+
+    @include hdpi(3) {
+        background-image: linear-gradient(#{$deg}, $color 33%, transparent 33%);
+    }
+}
+
+@mixin one-px-border($color, $position: bottom, $beforeAfter: false, $bottom: 0, $left: 0, $right: 0, $top: 0) {
+    position: relative;
+
+    @if $beforeAfter == false {
+        $beforeAfter: after;
+
+        @if $position == left or $position == top {
+            $beforeAfter: before;
+        }
+    }
+
+    &:#{$beforeAfter} {
+        content: '';
+        position: absolute;
+
+        @if $position == bottom or $position == top {
+            left: $left;
+            right: $right;
+
+            @if $position == bottom {
+                bottom: $bottom;
+            }
+            @else {
+                top: $top;
+            }
+        }
+        @else if $position == left or $position == right {
+            bottom: $bottom;
+            top: $top;
+
+            @if $position == left {
+                left: $left;
+            }
+            @else {
+                right: $right;
+            }
+        }
+
+        @include one-px-color($color, $position);
+    }
+}

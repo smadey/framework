@@ -1,0 +1,37 @@
+@import './mixins/_animation.scss';
+@import './mixins/_css3.scss';
+@import './mixins/_flex.scss';
+@import './mixins/_mediaqueries.scss';
+@import './mixins/_onepx.scss';
+@import './mixins/_transform.scss';
+@import './mixins/_transition.scss';
+
+@mixin box-shadow($shadow...) {
+    -webkit-box-shadow: $shadow;
+    box-shadow: $shadow;
+}
+
+@mixin box-sizing($boxmodel) {
+    -webkit-box-sizing: $boxmodel;
+    -moz-box-sizing: $boxmodel;
+    box-sizing: $boxmodel;
+}
+
+@mixin text-ellipsis {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    word-wrap: break-word;
+}
+
+@mixin text-size-adjust($value) {
+    -webkit-text-size-adjust: $value;
+    -moz-text-size-adjust: $value;
+    text-size-adjust: $value;
+}
+
+@mixin user-select($value) {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+}

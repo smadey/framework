@@ -1,0 +1,23 @@
+.smadey-loading {
+    @include align-items(center);
+    @include display-flex();
+    @include justify-content(center);
+}
+
+.smadey-spinning {
+    @include animation(smadey-spinning 1s infinite linear);
+    border: 3px solid rgba(48, 163, 197, .5);
+    border-top-color: rgb(48, 163, 197);
+    border-radius: 50%;
+    height: 30px;
+    width: 30px;
+}
+
+@include keyframe(smadey-spinning) {
+    0% {
+        @include rotate(0deg);
+    }
+    100% {
+        @include rotate(360deg);
+    }
+}
