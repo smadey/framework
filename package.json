@@ -6,7 +6,9 @@
   "license": "MIT",
   "devDependencies": {
     "gulp": "*",
+    "gulp-clean": "*",
     "gulp-sass": "*",
+    "gulp-minify-css": "*",
     "gulp-jscs": "*",
     "gulp-jshint": "*",
     "jshint-stylish": "*",

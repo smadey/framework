@@ -2,6 +2,8 @@ var path = require('path');
 
 var gulp = require('gulp');
 
+var clean = require('gulp-clean');
+
 var sass = require('gulp-sass');
 var cssmin = require('gulp-minify-css');
 
@@ -36,14 +38,19 @@ var paths = {
     }
 };
 
+// 注册"clean"任务: 删除文件
+gulp.task('clean', function () {
+    return gulp.src([paths.css.dest, paths.js.dest, paths.img.dest])
+        .pipe(clean());
+});
+
 // 注册"sass"任务: 编译sass
 gulp.task('sass', function (done) {
     return gulp.src(paths.css.src)
         .pipe(sass({
             errLogToConsole: true
         }))
-        .pipe(gulp.dest(paths.css.dest))
-        .on('end', done);
+        .pipe(gulp.dest(paths.css.dest));
 });
 
 // 注册"cssmin"任务: 压缩 css 文件
@@ -105,4 +112,4 @@ gulp.task('watch', function () {
     gulp.watch(paths.js.files, ['jslint', 'jscs', 'jsmin']);
 });
 
-gulp.task('default', ['cssmin', 'jsmin', 'imgmin', 'watch']);
+gulp.task('default', ['cssmin', 'jsmin', 'imgmin']);
