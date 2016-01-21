@@ -1,3 +1,10 @@
+// core.js
+!(function (window) {
+    if (!window.framework) {
+        window.framework = {};
+    }
+})(window);
+
 // 为可点击元素添加"activated"样式
 !(function (window, document) {
 
@@ -149,12 +156,6 @@
     }
 
 })(window, document);
-
-!(function (window) {
-    if (!window.framework) {
-        window.framework = {};
-    }
-})(window);
 
 // component: img loader
 !(function (window, $) {

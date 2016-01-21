@@ -28,7 +28,7 @@ var paths = {
     },
     js: {
         files: ['gulpfile.js', 'src/js/**/*.js'],
-        src: ['src/js/**/*.js'],
+        src: ['src/js/core.js', 'src/js/**/*.js'],
         all: 'framework.js',
         dest: 'js',
     },
