@@ -1,0 +1,36 @@
+.nav-tabs {
+    background-color: #f8f8f8;
+    border-top: 1px solid #ddd;
+    bottom: 0;
+    display: none;
+    left: 0;
+    position: fixed;
+    width: 100%;
+    z-index: 100;
+}
+
+.platform-browser .nav-tabs {
+    display: block;
+}
+
+.nav-tabs li {
+    float: left;
+    width: 25%;
+}
+
+.nav-tabs a {
+    color: #666;
+    display: block;
+    font-size: 12px;
+    line-height: 1;
+    padding-bottom: 4px;
+    text-align: center;
+}
+
+.nav-tabs li.active a {
+    color: #46c6fe;
+}
+
+.nav-tabs i {
+    font-size: 32px;
+}

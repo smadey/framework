@@ -1,0 +1,81 @@
+.row {
+    background-color: #fff;
+    position: relative;
+}
+
+.row:not(.activated) + .row:not(.row-gap):not(.activated):before {
+    background-color: #efeff4;
+    content: '';
+    height: 1px;
+    left: 15px;
+    position: absolute;
+    right: 0;
+    top: 0;
+}
+
+.row-gap {
+    margin-top: 10px;
+}
+
+.row-gap:first-child {
+    margin-top: 0;
+}
+
+.row-input {
+    padding: 15px;
+}
+
+.row-input input {
+    border-width: 0;
+    color: #333;
+    display: block;
+    font-size: 16px;
+    line-height: 20px;
+    width: 100%;
+}
+
+.row-input textarea {
+    border-width: 0;
+    color: #333;
+    display: block;
+    font-size: 16px;
+    line-height: 20px;
+    width: 100%;
+}
+
+.row-link {
+    color: #333;
+    display: block;
+    font-size: 16px;
+    padding: 15px;
+}
+
+.row-link .iconfont-arrow-next {
+    color: #c9c8cb;
+    font-size: 16px;
+    line-height: 1;
+    margin-top: -8px;
+    position: absolute;
+    right: 10px;
+    top: 50%;
+}
+
+.row-icon {
+    padding: 15px;
+}
+
+.row-icon > .icon:first-child {
+    margin-right: 15px;
+}
+
+.row-btn {
+    font-size: 18px;
+    line-height: 48px;
+    display: block;
+    text-align: center;
+}
+
+.row-btn.btn-danger {
+    background: #fff;
+    color: #f66;
+}

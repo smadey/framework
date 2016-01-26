@@ -1,7 +1,7 @@
 // core.js
 !(function (window) {
-    if (!window.framework) {
-        window.framework = {};
+    if (!window.framework || !window.aid) {
+        window.framework = window.aid = {};
     }
 })(window);
 
@@ -158,12 +158,10 @@
 })(window, document);
 
 // component: img loader
-!(function (window, $) {
+!(function (window, $, undefined) {
     if (!($ && $.fn)) {
         return;
     }
-
-    var framework = window.framework;
 
     var lastestSrc;
     var timer;
@@ -176,10 +174,11 @@
     }
 
     var defaults = {
-        SERVER_URL: ''
+        SERVER_URL: '',
+        afterAdaptive: undefined
     };
 
-    var ImgLoader = framework.ImgLoader = function (container, options) {
+    var ImgLoader = function (container, options) {
         var self = this;
 
         self.$ = $(container);
@@ -212,6 +211,12 @@
             if (self.$.attr('img-src')) {
                 self.src = $.trim(self.$.attr('img-src'));
                 self.load();
+            }
+
+            if ($.fn.imgZoomable) {
+                self.$.on('click', 'img,.img', function () {
+                    $(this).imgZoomable();
+                });
             }
         },
 
@@ -267,8 +272,24 @@
                     self.$.addClass('img-loaded');
 
                     if (self.adaptive) {
+                        var oldSize, newSize;
+
+                        oldSize = {
+                            w: self.$.width(),
+                            h: self.$.height()
+                        };
+
                         self.$.append(img);
                         $img.remove();
+
+                        newSize = {
+                            w: self.$.width(),
+                            h: self.$.height()
+                        };
+
+                        if ($.isFunction(self.options.afterAdaptive)) {
+                            self.options.afterAdaptive(newSize, oldSize);
+                        }
                     }
                     else {
                         $img.css({'background-image': 'url(' + src + ')', opacity: 1});
@@ -298,23 +319,261 @@
     $.fn.imgLoader.defaults = defaults;
 }(window, window.$));
 
-// component: list container
-!(function (window, $) {
+// component: img zoomable
+!(function (window, $, PinchZoom, undefined) {
+    if (!($ && $.fn && PinchZoom)) {
+        return;
+    }
+
+    var defaults = {
+        scrollSelector: 'body',
+    };
+
+    var $backdrop;
+
+    var ImgZoomable = function (container, options) {
+        var self = this;
+
+        self.options = $.extend(true, {}, defaults, options);
+
+        self.$ = $(container);
+        self.$scoller = self.$.parents(self.options.scrollSelector);
+
+        if (!$backdrop) {
+            $backdrop = $('<div />').addClass('img-zoomable-backdrop').appendTo('body');
+        }
+
+        self.init();
+
+        return self;
+    };
+
+    ImgZoomable.prototype = {
+        init: function () {
+            var self = this;
+
+            self.$scoller.addClass('modal-open');
+            self.$scoller.on('touchmove', preventDefault);
+            $backdrop.html('').css({display: 'block', 'background-color': 'transparent'});
+
+            var $pinch = $('<div />').appendTo($backdrop);
+            var $img = $('<img />').appendTo($pinch);
+
+            var originalCss = {
+                width: self.$.width(),
+                height: self.$.height(),
+                top: self.$.offset().top - self.$scoller.scrollTop(),
+                left: self.$.offset().left - self.$scoller.scrollLeft()
+            };
+
+            $img.attr('src', self.getSrc()).css(originalCss);
+
+            window.requestAnimationFrame(function () {
+                var wRatio = $backdrop.width() / originalCss.width;
+                var hRatio = $backdrop.height() / originalCss.height;
+
+                var ratio = Math.min(wRatio, hRatio);
+
+                $backdrop.transition(500).css('background-color', '');
+
+                $img.transition(500).css({
+                    width: originalCss.width * ratio,
+                    height: originalCss.height * ratio,
+                    top: ($backdrop.height() - originalCss.height * ratio) / 2,
+                    left: ($backdrop.width() - originalCss.width * ratio) / 2,
+                }).transitionEnd(function () {
+                    var pinch = new PinchZoom($pinch);
+                });
+
+                $backdrop.on('click', function () {
+                    self.$scoller.removeClass('modal-open');
+                    self.$scoller.off('touchmove');
+                    $backdrop.css('background-color', 'transparent');
+
+                    $img.css(originalCss).transitionEnd(function () {
+                        $backdrop.css({display: 'none', 'background-color': ''}).html('');
+                    });
+                });
+            });
+        },
+
+        getSrc: function () {
+            var self = this;
+
+            if (self.$.is('img')) {
+                return self.$.attr('src');
+            }
+            else if (/url\(.*\)/.test(self.$.css('backgroundImage'))) {
+                return self.$.css('backgroundImage').replace(/url\((.*)\)/, '$1');
+            }
+            return '';
+        }
+    };
+
+    $.fn.imgZoomable = function (options) {
+        var firstInstance;
+
+        this.each(function () {
+            var inst = new ImgZoomable(this, options);
+
+            if (!firstInstance) {
+                firstInstance = inst;
+            }
+        });
+
+        return firstInstance;
+    };
+
+    $.fn.imgZoomable.defaults = defaults;
+
+    function preventDefault(e) {
+        e.preventDefault();
+    }
+}(window, window.$, window.RTP && window.RTP.PinchZoom));
+
+// component: input with counter
+!(function (window, $, undefined) {
     if (!($ && $.fn)) {
         return;
     }
 
-    var framework = window.framework;
-
-    var PHASES = {
-        LOADING: 'loading',
-        NO_DATA: 'nodata',
-        LOADED: 'loaded',
+    var defaults = {
+        maxLength: 120,
+        local: false,
     };
+
+    var InputWithCounter = function (container, options) {
+        var self = this;
+
+        self.$ = $(container);
+        self.$parent = self.$.parent().addClass('input-with-counter');
+        self.$counter = $('<span class="input-counter"></span>').appendTo(self.$parent);
+
+        self.options = $.extend(true, {}, defaults, options);
+
+        self.childrenLength = self.$.children().length;
+
+        self.prevIndex = self.options.initialIndex;
+        self.currIndex = self.options.initialIndex;
+
+        self.init = function (options) {
+            self.$counter.css({
+                bottom: self.$parent.css('paddingBottom'),
+                right: self.$parent.css('paddingRight'),
+            });
+
+            self.calcCounter();
+            self.calcMaxLength();
+
+            self._bindChange();
+        };
+
+        self.calcCounter = function () {
+            self.$counter.text(self.getLength() + '/' + self.options.maxLength);
+        };
+
+        self._bindChange = function () {
+            var timer;
+
+            self.$.on('keydown, keyup', function (evt) {
+                if (timer) {
+                    clearTimeout(timer);
+                }
+
+                timer = setTimeout(function () {
+                    self.calcCounter();
+                    self.calcMaxLength();
+                }, 300);
+            });
+        };
+
+        self.calcCounter = function () {
+            var length;
+
+            if (self.options.local) {
+                length = self.getStrLocalLength(self.$.val());
+                length = Math.ceil(length / 2);
+            }
+            else {
+                length = self.$.val().length;
+            }
+
+            self.$counter.text(length + '/' + self.options.maxLength);
+        };
+
+        self.calcMaxLength = function () {
+            var maxLength = self.options.maxLength;
+            var value = self.$.val();
+
+            if (self.options.local) {
+                var localLength = self.getStrLocalLength(value);
+
+                maxLength = maxLength * 2 - Math.min(localLength - value.length, maxLength);
+
+                self.$.attr('maxlength', maxLength);
+            }
+            else if (parseInt(self.$.attr('maxlength')) !== maxLength) {
+                self.$.attr('maxlength', maxLength);
+            }
+
+            if (value.length > maxLength) {
+                self.$.val(value.slice(0, maxLength));
+                self.calcCounter();
+            }
+        };
+
+        self.init();
+
+        return self;
+    };
+
+    InputWithCounter.prototype = {
+        getStrLocalLength: function (str) {
+            if (!str) {
+                return 0;
+            }
+
+            var length = 0;
+
+            for (var i = 0, n = str.length; i < n; i++) {
+                if (/^[\u4e00-\u9fa5]+$/.test(str.charAt(i))) {
+                    length += 2;
+                }
+                else {
+                    length++;
+                }
+            }
+
+            return length;
+        }
+    };
+
+    $.fn.inputWithCounter = function (options) {
+        var firstInstance;
+
+        this.each(function () {
+            var inst = new InputWithCounter(this, options);
+
+            if (!firstInstance) {
+                firstInstance = inst;
+            }
+        });
+
+        return firstInstance;
+    };
+
+    $.fn.inputWithCounter.defaults = defaults;
+})(window, window.$);
+
+// component: list
+!(function (window, $, template, undefined) {
+    if (!($ && $.fn && template)) {
+        return;
+    }
 
     var defaults = {
         data: null,
-        phase: null,
+        extra: null,
 
         loading: false,
         error: null,
@@ -326,11 +585,12 @@
         scrollSelector: 'body',
         distance: '2.5%',
 
+        template: null,
         getPromise: null,
-        onPromiseSuccess: null,
+        getRealtimePromise: null,
     };
 
-    var List = framework.List = function (container, options) {
+    var List = function (container, options) {
         var self = this;
 
         $.extend(self, defaults, options);
@@ -342,64 +602,42 @@
     };
 
     List.prototype = {
-        init: init,
+        addItem: addItem,
         loadFromServer: loadFromServer,
+        loadFromServerRealtime: loadFromServerRealtime,
         loadMore: loadMore,
-        refresh: refresh,
+        init: init,
         isNoData: isNoData,
         isValidResult: isValidResult,
         isSafePosition: isSafePosition,
-        promiseSuccess: promiseSuccess,
-        add: add,
-        remove: remove
+        refresh: refresh,
+        removeItem: removeItem,
+        render: render,
+        scroll: scroll,
+        scrollTo: scrollTo,
+        scrollToBottom: scrollToBottom,
+        scrollToTop: scrollToTop,
     };
 
-    function init() {
-        var self = this;
-
-        if (self.pagination) {
-            $(window).on('scroll', function () {
-                if (self.hasMoreData && !self.isSafePosition()) {
-                    self.loadMore();
-                }
-            });
-        }
-    }
-
-    function isSafePosition() {
-        var self = this;
-
-        var maxScrollTop = self.$.outerHeight() + self.$.offset().top - window.innerHeight;
-        var curScrollTop = self.$scoller.scrollTop();
-
-        var remainScrollTop = maxScrollTop - curScrollTop;
-
-        var isPercent = self.distance.indexOf('%') !== -1;
-        var distance = isPercent ? maxScrollTop * parseFloat(self.distance) / 100 : parseFloat(self.distance);
-
-        return isPercent ?
-            (remainScrollTop / maxScrollTop > parseFloat(self.distance) / 100) :
-            (remainScrollTop > parseFloat(self.distance));
-    }
-
-    function add(item) {
+    function addItem(item) {
         var self = this;
 
         if ($.isArray(self.data)) {
-            self.data.push(item);
-
             if (self.pagination) {
                 self.pagination.total++;
             }
+
+            self.data.push(item);
+
+            var html = template(self.template, {data: [item], extra: self.extra});
+            self.$.append(html);
+            self.scrollToBottom(300);
+            self.afterRender();
         }
     }
 
     function loadFromServer() {
         var self = this;
-
-        if (!self.phase) {
-            self.phase = PHASES.LOADING;
-        }
 
         self.error = null;
         self.loading = true;
@@ -420,25 +658,93 @@
 
         var promise = self.getPromise(params);
 
-        promise.then(onSuccess, onError);
+        promise.then(onSuccess, onError).always(onAlways);
 
         return promise;
 
+        function onAlways() {
+            self.loading = false;
+        }
+
         function onSuccess(result) {
-            self.promiseSuccess(result);
-            onFinally();
+            if (!self.isValidResult(result)) {
+                return;
+            }
+
+            if (!self.pagination) {
+                self.data = result;
+                self.render();
+            }
+            else if (self.pagination.offset === 0) {
+                var extra = {};
+
+                $.each(result, function (key, value) {
+                    if (['total', 'lastupdatetime', 'list'].indexOf(key) === -1) {
+                        extra[key] = value;
+                    }
+                });
+
+                self.extra = extra;
+                self.data = self.opposite ? result.list.reverse() : result.list;
+
+                self.pagination.total = result.total;
+                self.lastupdatetime = result.lastupdatetime;
+                self.hasMoreData = self.pagination.total > self.data.length;
+
+                self.render();
+            }
+            else {
+                var list = self.opposite ? result.list.reverse() : result.list;
+                var html = template(self.template, {data: list, extra: self.extra});
+
+                if (self.opposite) {
+                    var oldHeight = self.$.height();
+                    var oldScrollTop = self.$scoller.scrollTop();
+
+                    self.data = list.concat(self.data);
+                    self.$.prepend(html);
+
+                    self.scrollTo(oldScrollTop + (self.$.height() - oldHeight));
+                }
+                else {
+                    self.data = ($.isArray(self.data) ? self.data : []).concat(list);
+                    self.$.append(html);
+                }
+
+                self.pagination.total = result.total;
+                self.hasMoreData = result.list.length > 0 && self.pagination.total > self.data.length;
+
+                self.afterRender();
+
+            }
         }
 
         function onError(error) {
             self.error = error;
-            onFinally();
+        }
+    }
+
+    function loadFromServerRealtime() {
+        var self = this;
+        var promise;
+
+        if ($.isFunction(self.getRealtimePromise)) {
+            promise = self.getRealtimePromise();
         }
 
-        function onFinally() {
-            self.phase = self.isNoData() ? PHASES.NO_DATA : PHASES.LOADED;
-
-            self.loading = false;
+        if (!promise || !promise.then) {
+            return $.Deferred().reject();
         }
+
+        promise.always(function () {
+            self.loadFromServerRealtime();
+        });
+
+        promise.then(function (result) {
+            self.addItem(result);
+        });
+
+        return promise;
     }
 
     function loadMore() {
@@ -454,9 +760,37 @@
         return self.loadFromServer();
     }
 
+    function init() {
+        var self = this;
+
+        if (self.pagination) {
+            $(window).on('scroll', function () {
+                if (self.hasMoreData && !self.isSafePosition()) {
+                    self.loadMore();
+                }
+            });
+        }
+    }
+
     function isNoData() {
         var self = this;
         return $.isArray(self.data) ? !self.data.length : !self.data;
+    }
+
+    function isSafePosition() {
+        var self = this;
+
+        var maxScrollTop = self.$.outerHeight() + self.$.offset().top - window.innerHeight;
+        var curScrollTop = self.$scoller.scrollTop();
+
+        var isPercent = self.distance.indexOf('%') !== -1;
+        var distance = isPercent ? maxScrollTop * parseFloat(self.distance) / 100 : parseFloat(self.distance);
+
+        var remainScrollTop = self.opposite ? curScrollTop : (maxScrollTop - curScrollTop);
+
+        return isPercent ?
+            (remainScrollTop / maxScrollTop > parseFloat(self.distance) / 100) :
+            (remainScrollTop > parseFloat(self.distance));
     }
 
     function isValidResult(result) {
@@ -467,62 +801,6 @@
         }
 
         return true;
-    }
-
-    function promiseSuccess(result) {
-        var self = this;
-
-        if (!self.isValidResult(result)) {
-            return;
-        }
-
-        if (!self.pagination) {
-            self.data = result;
-        }
-        else {
-            self.pagination.total = result.total;
-
-            if (self.pagination.offset === 0) {
-                self.lastupdatetime = result.lastupdatetime;
-
-                if (self.opposite) {
-                    self.data = result.list.reverse();
-                }
-                else {
-                    self.data = result.list;
-                }
-            }
-            else {
-                if (self.opposite) {
-                    self.data = result.list.reverse().concat(self.data);
-                }
-                else {
-                    self.data = self.data.concat(result.list);
-                }
-            }
-
-            self.hasMoreData = result.list.length > 0 && self.pagination.total > self.data.length;
-        }
-
-        if ($.isFunction(self.onPromiseSuccess)) {
-            self.onPromiseSuccess(result);
-        }
-    }
-
-    function remove(item) {
-        var self = this;
-
-        if ($.isArray(self.data) && self.data.indexOf(item) > -1) {
-            self.data.splice(self.data.indexOf(item), 1);
-
-            if (self.pagination) {
-                self.pagination.total--;
-            }
-
-            if (self.isNoData()) {
-                self.phase = PHASES.NO_DATA;
-            }
-        }
     }
 
     function refresh() {
@@ -540,6 +818,61 @@
         return self.loadFromServer();
     }
 
+    function removeItem(item) {
+        var self = this;
+        var index = $.isArray(self.data) ? self.data.indexOf(item) : -1;
+
+        if (index > -1) {
+            self.data.splice(index, 1);
+
+            if (self.pagination) {
+                self.pagination.total--;
+            }
+
+            self.$.children().eq(index).remove();
+        }
+    }
+
+    function render() {
+        var self = this;
+
+        var templateData = {data: self.data, extra: self.extra, $init: true};
+        var templateHtml = template(self.template, templateData);
+
+        self.$.html(templateHtml);
+
+        if ($.isFunction(self.afterRender)) {
+            self.afterRender();
+        }
+
+        if (self.opposite) {
+            self.scrollToBottom();
+        }
+    }
+
+    function scroll(height, duration) {
+        this.scrollTo(this.$scoller.scrollTop() + height, duration);
+    }
+
+    function scrollTo(top, duration) {
+        if (duration > 0) {
+            this.$scoller.animate({scrollTop: top}, duration);
+        }
+        else {
+            this.$scoller.scrollTop(top);
+        }
+    }
+
+    function scrollToBottom(duration) {
+        var self = this;
+        var maxScrollTop = self.$.outerHeight() + self.$.offset().top - window.innerHeight;
+        this.scrollTo(maxScrollTop, duration);
+    }
+
+    function scrollToTop(duration) {
+        this.scrollTo(0, duration);
+    }
+
     $.fn.list = function (options) {
         var firstInstance;
 
@@ -555,6 +888,138 @@
     };
 
     $.fn.list.defaults = defaults;
+})(window, window.$, window.template);
+
+// component: tab switchs
+!(function (window, $, undefined) {
+    if (!($ && $.fn)) {
+        return;
+    }
+
+    var defaults = {
+        headerSelector: '.tab-switchs-header',
+        contentSelector: '.tab-switchs-content',
+        positionClass: 'tab-switchs-position',
+        initialIndex: location.hash.match(/tab\d/) ? parseInt(location.hash.match(/tab(\d)/)[1]) : 0,
+        duration: 500,
+        onChange: undefined,
+        afterInit: undefined,
+    };
+
+    var TabSwitchs = function (container, options) {
+        var self = this;
+
+        self.$ = $(container);
+        self.options = $.extend(true, {}, defaults, options);
+
+        self.$header = self.$.find(self.options.headerSelector);
+        self.$position = $('<div >').addClass(self.options.positionClass).insertAfter(self.$header);
+        self.$content = self.$.find(self.options.contentSelector);
+
+        self.tabsLength = self.$header.children().length;
+
+        self.prevIndex = self.options.initialIndex;
+        self.currIndex = self.options.initialIndex;
+
+        self.init = function (options) {
+            self.$header.on('click', 'button', function (evt) {
+                var index = $(this).parent().index();
+                self.switchTo(index);
+
+                if (history.replaceState) {
+                    history.replaceState(null, window.title, location.href.split('#')[0] + '#tab' + index);
+                }
+            });
+
+            self.$position.width(100 / self.tabsLength + '%');
+
+            self.$content.width(self.tabsLength * 100 + '%');
+            self.$content.children().width(100 / self.tabsLength + '%');
+
+            self.updateHeader();
+            self.updatePosition();
+            self.updateContent();
+
+            if ($.isFunction(self.options.afterInit)) {
+                self.options.afterInit.call(self);
+            }
+        };
+
+        self.switchTo = function (index) {
+            if (index === self.currIndex) {
+                return;
+            }
+
+            self.prevIndex = self.currIndex;
+            self.currIndex = index;
+
+            self.updateHeader(self.options.duration);
+            self.updatePosition(self.options.duration);
+            self.updateContent(self.options.duration);
+
+            if ($.isFunction(self.options.onChange)) {
+                self.options.onChange.call(self, self.currIndex);
+            }
+        };
+
+        self.updateHeader = function () {
+            var $children = self.$header.children();
+
+            $children.eq(self.prevIndex).removeClass('active');
+            $children.eq(self.currIndex).addClass('active');
+        };
+
+        self.updatePosition = function (duration) {
+            var translate = {marginLeft: 100 * self.currIndex / self.tabsLength + '%'};
+
+            self.$position.transition(duration).css(translate);
+        };
+
+        self.updateContent = function (duration) {
+            self.$content.transition(duration).css({
+                marginLeft: -100 * self.currIndex + '%'
+            });
+
+            self.$content.children().transition(duration).each(function (i) {
+                var $this = $(this);
+
+                if (i === self.currIndex) {
+                    $this.css({opacity: 1});
+                    $this.children().css('display', '');
+                }
+                else if (duration > 0) {
+                    $this.css({opacity: 0}).transitionEnd(function () {
+                        if ($this.css('opacity') === '0') {
+                            $this.children().css('display', 'none');
+                        }
+                    });
+                }
+                else {
+                    $this.css({opacity: 0});
+                }
+            });
+        };
+
+        self.init();
+
+        return self;
+    };
+
+    $.fn.tabSwitchs = function (options) {
+        var firstInstance;
+
+        this.each(function () {
+            var inst = new TabSwitchs(this, options);
+
+            if (!firstInstance) {
+                firstInstance = inst;
+            }
+        });
+
+        return firstInstance;
+    };
+
+    $.fn.tabSwitchs.defaults = defaults;
 })(window, window.$);
 
 // 为$.fn添加 transform transtion transitionEnd方法

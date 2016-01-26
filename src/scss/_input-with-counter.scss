@@ -1,0 +1,12 @@
+.input-with-counter {
+    position: relative;
+
+    .input-counter {
+        margin-bottom: 5px;
+        color: #ccc;
+        font-size: 12px;
+        line-height: 1;
+        position: absolute;
+        margin-right: 5px;
+    }
+}

@@ -1,11 +1,20 @@
+.avatar {
+    border-radius: 4px;
+    height: 60px;
+    width: 60px;
+}
+
+body.modal-open {
+    overflow: hidden;
+}
+
 .clearfix {
     *zoom: 1;
+
     &:before,
     &:after {
         display: table;
-        content: "";
-        // Fixes Opera/contenteditable bug:
-        // http://nicolasgallagher.com/micro-clearfix-hack/#comment-36952
+        content: '';
         line-height: 0;
     }
     &:after {
@@ -13,10 +22,37 @@
     }
 }
 
+.clickable.activated {
+    box-shadow: 0 0 9999px rgba(0, 0, 0, .1) inset;
+}
+
+.icon.icon-60 {
+    font-size: 30px;
+    height: 60px;
+    line-height: 60px;
+    width: 60px;
+}
+
 .hide {
     display: none;
 }
 
+.pull-left {
+    float: left;
+}
+
+.pull-right {
+    float: right;
+}
+
 .show {
     display: block;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-right {
+    text-align: right;
 }

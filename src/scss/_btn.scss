@@ -1,0 +1,41 @@
+.btn {
+    position: relative;
+    text-align: center;
+
+    &:after {
+        bottom: -6px;
+        left: -6px;
+        content: '';
+        right: -6px;
+        top: -6px;
+        position: absolute;
+    }
+
+    &[disabled],
+    &.disabled {
+        opacity: .4;
+        cursor: default !important;
+        pointer-events: none;
+    }
+
+    &-primary,
+    &-primary.disabled,
+    &-primary[disabled] {
+        background: #46c6fe;
+        color: #fff;
+    }
+
+    &-warning,
+    &-warning.disabled,
+    &-warning[disabled] {
+        background: #f90;
+        color: #fff;
+    }
+
+    &-danger,
+    &-danger.disabled,
+    &-danger[disabled] {
+        background: #f66;
+        color: #fff;
+    }
+}

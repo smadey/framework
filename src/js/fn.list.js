@@ -1,20 +1,12 @@
-// component: list container
-!(function (window, $) {
-    if (!($ && $.fn)) {
+// component: list
+!(function (window, $, template, undefined) {
+    if (!($ && $.fn && template)) {
         return;
     }
 
-    var framework = window.framework;
-
-    var PHASES = {
-        LOADING: 'loading',
-        NO_DATA: 'nodata',
-        LOADED: 'loaded',
-    };
-
     var defaults = {
         data: null,
-        phase: null,
+        extra: null,
 
         loading: false,
         error: null,
@@ -26,11 +18,12 @@
         scrollSelector: 'body',
         distance: '2.5%',
 
+        template: null,
         getPromise: null,
-        onPromiseSuccess: null,
+        getRealtimePromise: null,
     };
 
-    var List = framework.List = function (container, options) {
+    var List = function (container, options) {
         var self = this;
 
         $.extend(self, defaults, options);
@@ -42,64 +35,42 @@
     };
 
     List.prototype = {
-        init: init,
+        addItem: addItem,
         loadFromServer: loadFromServer,
+        loadFromServerRealtime: loadFromServerRealtime,
         loadMore: loadMore,
-        refresh: refresh,
+        init: init,
         isNoData: isNoData,
         isValidResult: isValidResult,
         isSafePosition: isSafePosition,
-        promiseSuccess: promiseSuccess,
-        add: add,
-        remove: remove
+        refresh: refresh,
+        removeItem: removeItem,
+        render: render,
+        scroll: scroll,
+        scrollTo: scrollTo,
+        scrollToBottom: scrollToBottom,
+        scrollToTop: scrollToTop,
     };
 
-    function init() {
-        var self = this;
-
-        if (self.pagination) {
-            $(window).on('scroll', function () {
-                if (self.hasMoreData && !self.isSafePosition()) {
-                    self.loadMore();
-                }
-            });
-        }
-    }
-
-    function isSafePosition() {
-        var self = this;
-
-        var maxScrollTop = self.$.outerHeight() + self.$.offset().top - window.innerHeight;
-        var curScrollTop = self.$scoller.scrollTop();
-
-        var remainScrollTop = maxScrollTop - curScrollTop;
-
-        var isPercent = self.distance.indexOf('%') !== -1;
-        var distance = isPercent ? maxScrollTop * parseFloat(self.distance) / 100 : parseFloat(self.distance);
-
-        return isPercent ?
-            (remainScrollTop / maxScrollTop > parseFloat(self.distance) / 100) :
-            (remainScrollTop > parseFloat(self.distance));
-    }
-
-    function add(item) {
+    function addItem(item) {
         var self = this;
 
         if ($.isArray(self.data)) {
-            self.data.push(item);
-
             if (self.pagination) {
                 self.pagination.total++;
             }
+
+            self.data.push(item);
+
+            var html = template(self.template, {data: [item], extra: self.extra});
+            self.$.append(html);
+            self.scrollToBottom(300);
+            self.afterRender();
         }
     }
 
     function loadFromServer() {
         var self = this;
-
-        if (!self.phase) {
-            self.phase = PHASES.LOADING;
-        }
 
         self.error = null;
         self.loading = true;
@@ -120,25 +91,93 @@
 
         var promise = self.getPromise(params);
 
-        promise.then(onSuccess, onError);
+        promise.then(onSuccess, onError).always(onAlways);
 
         return promise;
 
+        function onAlways() {
+            self.loading = false;
+        }
+
         function onSuccess(result) {
-            self.promiseSuccess(result);
-            onFinally();
+            if (!self.isValidResult(result)) {
+                return;
+            }
+
+            if (!self.pagination) {
+                self.data = result;
+                self.render();
+            }
+            else if (self.pagination.offset === 0) {
+                var extra = {};
+
+                $.each(result, function (key, value) {
+                    if (['total', 'lastupdatetime', 'list'].indexOf(key) === -1) {
+                        extra[key] = value;
+                    }
+                });
+
+                self.extra = extra;
+                self.data = self.opposite ? result.list.reverse() : result.list;
+
+                self.pagination.total = result.total;
+                self.lastupdatetime = result.lastupdatetime;
+                self.hasMoreData = self.pagination.total > self.data.length;
+
+                self.render();
+            }
+            else {
+                var list = self.opposite ? result.list.reverse() : result.list;
+                var html = template(self.template, {data: list, extra: self.extra});
+
+                if (self.opposite) {
+                    var oldHeight = self.$.height();
+                    var oldScrollTop = self.$scoller.scrollTop();
+
+                    self.data = list.concat(self.data);
+                    self.$.prepend(html);
+
+                    self.scrollTo(oldScrollTop + (self.$.height() - oldHeight));
+                }
+                else {
+                    self.data = ($.isArray(self.data) ? self.data : []).concat(list);
+                    self.$.append(html);
+                }
+
+                self.pagination.total = result.total;
+                self.hasMoreData = result.list.length > 0 && self.pagination.total > self.data.length;
+
+                self.afterRender();
+
+            }
         }
 
         function onError(error) {
             self.error = error;
-            onFinally();
+        }
+    }
+
+    function loadFromServerRealtime() {
+        var self = this;
+        var promise;
+
+        if ($.isFunction(self.getRealtimePromise)) {
+            promise = self.getRealtimePromise();
         }
 
-        function onFinally() {
-            self.phase = self.isNoData() ? PHASES.NO_DATA : PHASES.LOADED;
-
-            self.loading = false;
+        if (!promise || !promise.then) {
+            return $.Deferred().reject();
         }
+
+        promise.always(function () {
+            self.loadFromServerRealtime();
+        });
+
+        promise.then(function (result) {
+            self.addItem(result);
+        });
+
+        return promise;
     }
 
     function loadMore() {
@@ -154,9 +193,37 @@
         return self.loadFromServer();
     }
 
+    function init() {
+        var self = this;
+
+        if (self.pagination) {
+            $(window).on('scroll', function () {
+                if (self.hasMoreData && !self.isSafePosition()) {
+                    self.loadMore();
+                }
+            });
+        }
+    }
+
     function isNoData() {
         var self = this;
         return $.isArray(self.data) ? !self.data.length : !self.data;
+    }
+
+    function isSafePosition() {
+        var self = this;
+
+        var maxScrollTop = self.$.outerHeight() + self.$.offset().top - window.innerHeight;
+        var curScrollTop = self.$scoller.scrollTop();
+
+        var isPercent = self.distance.indexOf('%') !== -1;
+        var distance = isPercent ? maxScrollTop * parseFloat(self.distance) / 100 : parseFloat(self.distance);
+
+        var remainScrollTop = self.opposite ? curScrollTop : (maxScrollTop - curScrollTop);
+
+        return isPercent ?
+            (remainScrollTop / maxScrollTop > parseFloat(self.distance) / 100) :
+            (remainScrollTop > parseFloat(self.distance));
     }
 
     function isValidResult(result) {
@@ -167,62 +234,6 @@
         }
 
         return true;
-    }
-
-    function promiseSuccess(result) {
-        var self = this;
-
-        if (!self.isValidResult(result)) {
-            return;
-        }
-
-        if (!self.pagination) {
-            self.data = result;
-        }
-        else {
-            self.pagination.total = result.total;
-
-            if (self.pagination.offset === 0) {
-                self.lastupdatetime = result.lastupdatetime;
-
-                if (self.opposite) {
-                    self.data = result.list.reverse();
-                }
-                else {
-                    self.data = result.list;
-                }
-            }
-            else {
-                if (self.opposite) {
-                    self.data = result.list.reverse().concat(self.data);
-                }
-                else {
-                    self.data = self.data.concat(result.list);
-                }
-            }
-
-            self.hasMoreData = result.list.length > 0 && self.pagination.total > self.data.length;
-        }
-
-        if ($.isFunction(self.onPromiseSuccess)) {
-            self.onPromiseSuccess(result);
-        }
-    }
-
-    function remove(item) {
-        var self = this;
-
-        if ($.isArray(self.data) && self.data.indexOf(item) > -1) {
-            self.data.splice(self.data.indexOf(item), 1);
-
-            if (self.pagination) {
-                self.pagination.total--;
-            }
-
-            if (self.isNoData()) {
-                self.phase = PHASES.NO_DATA;
-            }
-        }
     }
 
     function refresh() {
@@ -240,6 +251,61 @@
         return self.loadFromServer();
     }
 
+    function removeItem(item) {
+        var self = this;
+        var index = $.isArray(self.data) ? self.data.indexOf(item) : -1;
+
+        if (index > -1) {
+            self.data.splice(index, 1);
+
+            if (self.pagination) {
+                self.pagination.total--;
+            }
+
+            self.$.children().eq(index).remove();
+        }
+    }
+
+    function render() {
+        var self = this;
+
+        var templateData = {data: self.data, extra: self.extra, $init: true};
+        var templateHtml = template(self.template, templateData);
+
+        self.$.html(templateHtml);
+
+        if ($.isFunction(self.afterRender)) {
+            self.afterRender();
+        }
+
+        if (self.opposite) {
+            self.scrollToBottom();
+        }
+    }
+
+    function scroll(height, duration) {
+        this.scrollTo(this.$scoller.scrollTop() + height, duration);
+    }
+
+    function scrollTo(top, duration) {
+        if (duration > 0) {
+            this.$scoller.animate({scrollTop: top}, duration);
+        }
+        else {
+            this.$scoller.scrollTop(top);
+        }
+    }
+
+    function scrollToBottom(duration) {
+        var self = this;
+        var maxScrollTop = self.$.outerHeight() + self.$.offset().top - window.innerHeight;
+        this.scrollTo(maxScrollTop, duration);
+    }
+
+    function scrollToTop(duration) {
+        this.scrollTo(0, duration);
+    }
+
     $.fn.list = function (options) {
         var firstInstance;
 
@@ -255,4 +321,4 @@
     };
 
     $.fn.list.defaults = defaults;
-})(window, window.$);
+})(window, window.$, window.template);

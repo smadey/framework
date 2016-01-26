@@ -104,12 +104,22 @@ gulp.task('imgmin', function () {
         .pipe(gulp.dest(paths.img.dest));
 });
 
+gulp.task('copy:css', ['sass'], function () {
+    return gulp.src(path.join(paths.css.dest, paths.css.all))
+        .pipe(gulp.dest('../Aiding/AidingStatic/common/css/'));
+});
+
+gulp.task('copy:js', function () {
+    return gulp.src(path.join(paths.js.dest, paths.js.all))
+        .pipe(gulp.dest('../Aiding/AidingStatic/common/js/'));
+});
+
 // 注册"watch"任务: 监听文件的修改
 gulp.task('watch', function () {
     livereload.listen();
 
-    gulp.watch(paths.css.files, ['sass', 'cssmin']);
-    gulp.watch(paths.js.files, ['jslint', 'jscs', 'jsmin']);
+    gulp.watch(paths.css.files, ['sass', 'cssmin', 'copy:css']);
+    gulp.watch(paths.js.files, ['jslint', 'jscs', 'jsmin', 'copy:js']);
 });
 
 gulp.task('default', ['cssmin', 'jsmin', 'imgmin']);

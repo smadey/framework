@@ -1,10 +1,8 @@
 // component: img loader
-!(function (window, $) {
+!(function (window, $, undefined) {
     if (!($ && $.fn)) {
         return;
     }
-
-    var framework = window.framework;
 
     var lastestSrc;
     var timer;
@@ -17,10 +15,11 @@
     }
 
     var defaults = {
-        SERVER_URL: ''
+        SERVER_URL: '',
+        afterAdaptive: undefined
     };
 
-    var ImgLoader = framework.ImgLoader = function (container, options) {
+    var ImgLoader = function (container, options) {
         var self = this;
 
         self.$ = $(container);
@@ -53,6 +52,12 @@
             if (self.$.attr('img-src')) {
                 self.src = $.trim(self.$.attr('img-src'));
                 self.load();
+            }
+
+            if ($.fn.imgZoomable) {
+                self.$.on('click', 'img,.img', function () {
+                    $(this).imgZoomable();
+                });
             }
         },
 
@@ -108,8 +113,24 @@
                     self.$.addClass('img-loaded');
 
                     if (self.adaptive) {
+                        var oldSize, newSize;
+
+                        oldSize = {
+                            w: self.$.width(),
+                            h: self.$.height()
+                        };
+
                         self.$.append(img);
                         $img.remove();
+
+                        newSize = {
+                            w: self.$.width(),
+                            h: self.$.height()
+                        };
+
+                        if ($.isFunction(self.options.afterAdaptive)) {
+                            self.options.afterAdaptive(newSize, oldSize);
+                        }
                     }
                     else {
                         $img.css({'background-image': 'url(' + src + ')', opacity: 1});

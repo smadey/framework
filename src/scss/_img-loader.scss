@@ -1,12 +1,12 @@
 .img-container {
-    background: #efefef url('../framework/img/img-loading.png') 50% 50% no-repeat;
+    background: #efefef url('../img/img-loading.png') 50% 50% no-repeat;
     background-size: contain;
     height: 100%;
     position: relative;
     width: 100%;
 
     &.img-avatar {
-        background-image: url('../framework/img/img-avatar-default.png');
+        background-image: url('../img/img-avatar-default.png');
 
         &, .img {
             border-radius: 50%;
@@ -31,12 +31,12 @@
         padding-top: 0;
 
         .img {
-            @include transition(opacity .3s);
+            @include transition(opacity linear 0.3s);
         }
     }
 
     &.img-error {
-        background-image: url('../framework/img/img-error.png');
+        background-image: url('../img/img-error.png');
     }
 
     .img {
@@ -50,4 +50,5 @@
         top: 0;
         width: 100%;
     }
+
 }

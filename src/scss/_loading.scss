@@ -1,11 +1,11 @@
-.smadey-loading {
+.framework-loading {
     @include align-items(center);
     @include display-flex();
     @include justify-content(center);
 }
 
-.smadey-spinning {
-    @include animation(smadey-spinning 1s infinite linear);
+.framework-spinning {
+    @include animation(framework-spinning 1s infinite linear);
     border: 3px solid rgba(48, 163, 197, .5);
     border-top-color: rgb(48, 163, 197);
     border-radius: 50%;
@@ -13,7 +13,7 @@
     width: 30px;
 }
 
-@include keyframe(smadey-spinning) {
+@include keyframe(framework-spinning) {
     0% {
         @include rotate(0deg);
     }
