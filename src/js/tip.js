@@ -4,6 +4,7 @@
 
     framework.tip = {
         _elem: null,
+        _openTimes: 0,
         getElem: function () {
             var self = this;
 
@@ -25,7 +26,7 @@
             return elem;
         },
         show: function (text, duration, callback) {
-            if (!text) {
+            if (!text || this._openTimes > 0) {
                 return;
             }
 
@@ -50,6 +51,7 @@
                 self.hide(duration || 1500);
             });
 
+            self._openTimes++;
             elem.addEventListener('touchstart', self.hide.bind(self), false);
         },
         hide: function (delay) {
@@ -72,6 +74,7 @@
                     self.callback = null;
                 }
 
+                self._openTimes--;
                 elem.removeEventListener('touchmove', self.hide, false);
             }
         }

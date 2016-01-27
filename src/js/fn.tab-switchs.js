@@ -30,6 +30,7 @@
         self.currIndex = self.options.initialIndex;
 
         self.init = function (options) {
+            self.$header.children().addClass('clickable');
             self.$header.on('click', 'button', function (evt) {
                 var index = $(this).parent().index();
                 self.switchTo(index);

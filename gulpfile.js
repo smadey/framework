@@ -109,14 +109,14 @@ gulp.task('copy:css', ['sass'], function () {
         .pipe(gulp.dest('../Aiding/AidingStatic/common/css/'));
 });
 
-gulp.task('copy:js', function () {
+gulp.task('copy:js', ['jsmin'], function () {
     return gulp.src(path.join(paths.js.dest, paths.js.all))
         .pipe(gulp.dest('../Aiding/AidingStatic/common/js/'));
 });
 
 // 注册"watch"任务: 监听文件的修改
 gulp.task('watch', function () {
-    livereload.listen();
+    livereload.listen(9999);
 
     gulp.watch(paths.css.files, ['sass', 'cssmin', 'copy:css']);
     gulp.watch(paths.js.files, ['jslint', 'jscs', 'jsmin', 'copy:js']);
