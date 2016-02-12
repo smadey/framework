@@ -1,12 +1,12 @@
 .img-container {
-    background: #efefef url('../img/img-loading.png') 50% 50% no-repeat;
+    background: #efefef url('#{$framework-path}/img/img-loading.png') 50% 50% no-repeat;
     background-size: contain;
     height: 100%;
     position: relative;
     width: 100%;
 
     &.img-avatar {
-        background-image: url('../img/img-avatar-default.png');
+        background-image: url('#{$framework-path}/img/img-avatar-default.png');
 
         &, .img {
             border-radius: 50%;
@@ -36,7 +36,7 @@
     }
 
     &.img-error {
-        background-image: url('../img/img-error.png');
+        background-image: url('#{$framework-path}/img/img-error.png');
     }
 
     .img {

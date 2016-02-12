@@ -247,6 +247,10 @@
             return new Date();
         }
 
+        if (obj instanceof Date) {
+            return obj;
+        }
+
         if (typeof obj === 'string') {
             return new Date(obj.replace(/-/g, '/'));
         }
