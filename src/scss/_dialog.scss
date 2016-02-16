@@ -21,6 +21,7 @@
 
     &-button {
         background: transparent;
+        display: block;
         @include flex(1);
         height: 34px;
         line-height: 34px;
