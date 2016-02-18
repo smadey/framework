@@ -558,7 +558,17 @@
         self.prevIndex = self.options.initialIndex;
         self.currIndex = self.options.initialIndex;
 
-        self.init = function (options) {
+        self.init();
+
+        return self;
+    };
+
+    InputWithCounter.getStrLocalLength = getStrLocalLength;
+
+    InputWithCounter.prototype = {
+        init: function () {
+            var self = this;
+
             self.$counter.css({
                 bottom: self.$parent.css('paddingBottom'),
                 right: self.$parent.css('paddingRight'),
@@ -568,13 +578,9 @@
             self.calcMaxLength();
 
             self._bindChange();
-        };
-
-        self.calcCounter = function () {
-            self.$counter.text(self.getLength() + '/' + self.options.maxLength);
-        };
-
-        self._bindChange = function () {
+        },
+        _bindChange: function () {
+            var self = this;
             var timer;
 
             self.$.on('keydown, keyup', function (evt) {
@@ -587,13 +593,13 @@
                     self.calcMaxLength();
                 }, 300);
             });
-        };
-
-        self.calcCounter = function () {
+        },
+        calcCounter: function () {
+            var self = this;
             var length;
 
             if (self.options.local) {
-                length = self.getStrLocalLength(self.$.val());
+                length = getStrLocalLength(self.$.val());
                 length = Math.ceil(length / 2);
             }
             else {
@@ -601,14 +607,14 @@
             }
 
             self.$counter.text(length + '/' + self.options.maxLength);
-        };
-
-        self.calcMaxLength = function () {
+        },
+        calcMaxLength: function () {
+            var self = this;
             var maxLength = self.options.maxLength;
             var value = self.$.val();
 
             if (self.options.local) {
-                var localLength = self.getStrLocalLength(value);
+                var localLength = getStrLocalLength(value);
 
                 maxLength = maxLength * 2 - Math.min(localLength - value.length, maxLength);
 
@@ -622,33 +628,27 @@
                 self.$.val(value.slice(0, maxLength));
                 self.calcCounter();
             }
-        };
-
-        self.init();
-
-        return self;
+        },
     };
 
-    InputWithCounter.prototype = {
-        getStrLocalLength: function (str) {
-            if (!str) {
-                return 0;
-            }
-
-            var length = 0;
-
-            for (var i = 0, n = str.length; i < n; i++) {
-                if (/^[\u4e00-\u9fa5]+$/.test(str.charAt(i))) {
-                    length += 2;
-                }
-                else {
-                    length++;
-                }
-            }
-
-            return length;
+    function getStrLocalLength(str) {
+        if (!str) {
+            return 0;
         }
-    };
+
+        var length = 0;
+
+        for (var i = 0, n = str.length; i < n; i++) {
+            if (/^[\u4e00-\u9fa5]+$/.test(str.charAt(i))) {
+                length += 2;
+            }
+            else {
+                length++;
+            }
+        }
+
+        return length;
+    }
 
     $.fn.inputWithCounter = function (options) {
         var firstInstance;
