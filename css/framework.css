@@ -458,12 +458,13 @@ ol {
 
 .tab-switchs-header {
   background-color: #fff;
+  display: -webkit-box;
+  display: -webkit-flex;
   display: -moz-box;
   display: -moz-flex;
   display: -ms-flexbox;
-  display: -webkit-box;
-  display: -webkit-flex;
-  display: flex; }
+  display: flex;
+  touch-action: none; }
   .tab-switchs-header > li {
     -moz-box-flex: 1;
     -moz-flex: 1;

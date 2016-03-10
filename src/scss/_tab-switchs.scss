@@ -5,12 +5,8 @@
 
 .tab-switchs-header {
     background-color: #fff;
-    display: -moz-box;
-    display: -moz-flex;
-    display: -ms-flexbox;
-    display: -webkit-box;
-    display: -webkit-flex;
-    display: flex;
+    @include display-flex();
+    touch-action: none;
 
     & > li {
         -moz-box-flex: 1;
